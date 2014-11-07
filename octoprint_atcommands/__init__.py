@@ -77,9 +77,9 @@ def hook_atcommand(comm_obj, cmd):
 def atcommand_pause(comm_obj, cmd):
 	for line in s.get(["at_pause_commands"]).splitlines():
 		if line:
-			comm_obj._doSend(line)
+			comm_obj._send(line)
 
-	comm_obj.setPause(True)
+	comm_obj.pause_print()
 	return "M105"
 
 methods = {'atcommand_pause': atcommand_pause}
