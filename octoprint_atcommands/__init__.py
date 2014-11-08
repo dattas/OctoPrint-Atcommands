@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from octoprint.events import eventManager, Events
+from octoprint.comm.protocol.reprap.util import GcodeCommand
 import re
 import octoprint.plugin
 import logging
@@ -56,6 +57,8 @@ class AtCommandsPlugin(octoprint.plugin.SettingsPlugin,octoprint.plugin.Template
 
 
 def hook_atcommand(comm_obj, cmd):
+	if isinstance(cmd, GcodeCommand):
+		cmd = cmd.command
 	atcommand = _regex_at_command.search(cmd)
 	if atcommand:
 		atcommand = atcommand.group(1)
@@ -76,6 +79,8 @@ def hook_atcommand(comm_obj, cmd):
 
 def atcommand_pause(comm_obj, cmd):
 	for line in s.get(["at_pause_commands"]).splitlines():
+		line = line.partition(';')[0]
+		line = line.rstrip()
 		if line:
 			comm_obj._send(line)
 
