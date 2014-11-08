@@ -58,7 +58,7 @@ class AtCommandsPlugin(octoprint.plugin.SettingsPlugin,octoprint.plugin.Template
 
 def hook_atcommand(comm_obj, cmd):
 	if isinstance(cmd, GcodeCommand):
-		cmd = cmd.command
+		cmd = cmd.original
 	atcommand = _regex_at_command.search(cmd)
 	if atcommand:
 		atcommand = atcommand.group(1)
