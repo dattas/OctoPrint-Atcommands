@@ -56,41 +56,33 @@ class AtCommandsPlugin(octoprint.plugin.SettingsPlugin,octoprint.plugin.Template
 		}
 
 
-def hook_atcommand(comm_obj, cmd):
-	if isinstance(cmd, GcodeCommand):
-		cmd = cmd.original
-	atcommand = _regex_at_command.search(cmd)
-	if atcommand:
-		atcommand = atcommand.group(1)
-		if atcommand in atcommandsToEvent:
-			eventManager().fire(atcommandsToEvent[atcommand])
-		else:
-			#no printers are going to know how to handle an @ command, return a blank string to clear the command if we can't parse it
-			return ""
-		atcommandHandler = "atcommand_"+atcommand
-		if atcommandHandler in methods:
-			return methods[atcommandHandler](comm_obj, cmd)
-		else:
-			return ""
+def hook_atcommand(protocol, command, with_line_number):
+	if command is not None and command.unknown:
+		logging.getLogger("octoprint.plugins.atcommands").debug("searching through '{0}'".format(command.original))
+		atcommand = _regex_at_command.search(command.original)
+		if atcommand:
+			atcommand = atcommand.group(1)
+			atcommandHandler = "atcommand_"+atcommand
+			if atcommandHandler in methods:
+				return methods[atcommandHandler](protocol, command, with_line_number)
+	return command, with_line_number
 
-
-
-	return False
-
-def atcommand_pause(comm_obj, cmd):
+def atcommand_pause(protocol, command, with_line_number):
 	for line in s.get(["at_pause_commands"]).splitlines():
-		line = line.partition(';')[0]
-		line = line.rstrip()
+		if ';' in line:
+			line = line.partition(';')[0]
+			line = line.rstrip()
 		if line:
-			comm_obj._send(line)
+			protocol._send(line)
 
-	comm_obj.pause_print()
-	return "M105"
+	protocol.pause_print(only_pause=True)
+	command = None
+	return command, with_line_number
 
 methods = {'atcommand_pause': atcommand_pause}
 
 __plugin_name__ = "Atcommand Hook Plugin"
 __plugin_version__ = "0.1"
 __plugin_description__ = "Looks for @commands and handles them"
-__plugin_hooks__ = {'octoprint.comm.protocol.gcode': hook_atcommand}
+__plugin_hooks__ = {'octoprint.comm.protocol.gcode.queued': hook_atcommand}
 __plugin_implementations__ = [AtCommandsPlugin()]
